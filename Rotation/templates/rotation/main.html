@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f4f7fa;
+    }
+    .container-fluid {
+        max-width: 1400px;
+    }
+    .tech-card {
+        height: 100%;
+        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .tech-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+    .current-tech {
+        background: linear-gradient(45deg, #007bff, #6610f2);
+        color: white;
+    }
+    .side-tech {
+        background-color: #ffffff;
+    }
+    .tech-name {
+        font-weight: bold;
+    }
+    .current-tech .tech-name {
+        font-size: 2.5rem;
+    }
+    .side-tech .tech-name {
+        font-size: 1.5rem;
+    }
+    .log-section {
+        background-color: #ffffff;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        overflow-x: hidden;
+    }
+    .log-list {
+        max-height: 380px;
+        overflow-y: auto;
+    }
+    .log-item {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 0.9em;
+    }
+    .log-item:last-child {
+        border-bottom: none;
+    }
+    .log-item.current {
+        background-color: #e7f5ff;
+    }
+    .btn-custom {
+        border-radius: 25px;
+        padding: 10px 25px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .section-title {
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    .tech-item {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        border-left: 5px solid transparent;
+    }
+    .tech-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-right: 5px;
+    }
+    .tech-item.current {
+        border-left-color: #007bff;
+        background-color: #e7f5ff;
+    }
+    .tech-item.next {
+        border-left-color: #28a745;
+        background-color: #e7fff0;
+    }
+    .tech-item.inactive {
+        opacity: 0.7;
+    }
+    .tech-status {
+        font-size: 0.8rem;
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 12px;
+    }
+    .status-active {
+        background-color: #28a745;
+        color: white;
+    }
+    .status-inactive {
+        background-color: #6c757d;
+        color: white;
+    }
+    .next-icon {
+        color: #28a745;
+        margin-right: 5px;
+    }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row align-items-center mb-5">
+        <!-- Previous Tech -->
+        <div class="col-md-3">
+            <div class="card tech-card side-tech">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Previous Tech</h5>
+                    <p class="tech-name">{{ previous_tech.name|default:"No previous tech" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Current Tech -->
+        <div class="col-md-6">
+            <div class="card tech-card {% if viewing_history %}side-tech{% else %}current-tech{% endif %}">
+                <div class="card-body text-center">
+                    <h2 class="card-title">{% if viewing_history %}Viewing History{% else %}Current Tech{% endif %}</h2>
+                    <p class="tech-name display-4">
+                        {% if current_tech %}
+                            {{ current_tech.name }}
+                        {% elif next_tech %}
+                            Click Next to Assign 
+                        {% else %}
+                            No tech assigned
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Next Tech -->
+        <div class="col-md-3">
+            <div class="card tech-card side-tech">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Next Tech</h5>
+                    <p class="tech-name">
+                        {% if next_tech %}
+                            {{ next_tech.name }}
+                        {% else %}
+                            No next tech
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center mb-5">
+        <form action="{% url 'previous_tech' %}" method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-custom me-2">Previous</button>
+        </form>
+        <form action="{% url 'next_tech' %}" method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-custom">
+                {% if viewing_history %}Current{% else %}Next{% endif %}
+            </button>
+        </form>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="log-section">
+                <h3 class="section-title">Assignment Log</h3>
+                <div class="log-list">
+                    {% for assignment in assignments %}
+                        <div class="log-item {% if assignment.is_current %}current{% endif %}">
+                            <strong>{{ assignment.tech.name }}</strong> - Assigned at {{ assignment.assigned_at|custom_date:"F j, Y g:i A" }}
+                        </div>
+                    {% empty %}
+                        <div class="log-item">No assignments logged yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="log-section">
+                <h3 class="section-title">All Techs</h3>
+                <div id="all-techs-list" class="log-list" style="height: 380px; overflow-y: auto;">
+                    {% for tech in techs %}
+                        <div id="tech-item-{{ tech.id }}" class="tech-item {% if tech == current_tech %}current{% elif tech == next_tech %}next{% endif %} {% if not tech.active %}inactive{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    {% if tech == next_tech %}
+                                        <i class="fas fa-chevron-right next-icon"></i>
+                                    {% endif %}
+                                    {{ forloop.counter }}. {{ tech.name }}
+                                </h5>
+                                <span class="tech-status {% if tech.active %}status-active{% else %}status-inactive{% endif %}">
+                                    {% if tech.active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                            {% if tech == current_tech %}
+                                <small class="text-muted">Currently on duty</small>
+                            {% elif tech == next_tech %}
+                                <small class="text-muted">Up next in the rotation</small>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <div class="tech-item">No techs available.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const techList = document.getElementById('all-techs-list');
+    const currentTech = techList.querySelector('.tech-item.current');
+    const nextTech = techList.querySelector('.tech-item.next');
+
+    function scrollIntoViewIfNeeded(element) {
+        if (element) {
+            const parentRect = techList.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+
+            if (elementRect.top < parentRect.top) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else if (elementRect.bottom > parentRect.bottom) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }
+    }
+
+    // Scroll to current tech first
+    scrollIntoViewIfNeeded(currentTech);
+
+    // If next tech is not visible after scrolling to current, scroll to next
+    setTimeout(() => {
+        scrollIntoViewIfNeeded(nextTech);
+    }, 500);  // Half-second delay to allow for smooth scrolling
+});
+</script>
+{% endblock %}

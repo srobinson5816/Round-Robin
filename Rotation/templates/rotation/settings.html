@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <h2 class="mb-4">Settings</h2>
+        <p>Current database location: {{ current_location }}</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="{{ form.database_location.id_for_label }}" class="form-label">New Database Location</label>
+                {% render_field form.database_location class="form-control" %}
+                {% if form.database_location.help_text %}
+                    <small class="form-text text-muted">{{ form.database_location.help_text }}</small>
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary">Update Location</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
